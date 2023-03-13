@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CFN template to deploy SageMaker Endpoint
+
+
+Parameters:
+
+  RoleArn:
+    Type: String
+    Description: SageMaker IAM Role
+    Default: arn:aws:iam::474422712127:role/sagemaker-role-BYOC
+  
+  ImageURI:
+    Type: String
+    Description: The inference/container image that you are using
+    Default: 683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-scikit-learn:0.23-1-cpu-py3
+
+  ModelData:
+    Type: String
+    Description: The S3 Path with the Model Data
+    Default: s3://sagemaker-us-east-1-474422712127/model.tar.gz
+
+  InstanceType:
+    Type: String
+    Description: SageMaker Endpoint Instance Type
+    Default: ml.c5.xlarge
+  
+  InstanceCount:
+    Type: String
+    Description: Number of instances behind endpoint
+    Default: 1
+
+
+Resources:
+
+  SageMakerModel:
+    Type: AWS::SageMaker::Model
+    Properties: 
+      Containers: 
+        -
+          Image: !Ref ImageURI
+          ModelDataUrl: !Ref ModelData
+          Mode: SingleModel #This defaults to single model change to "MultiModel" for MME
+          Environment: {"SAGEMAKER_PROGRAM": "inference.py", "SAGEMAKER_SUBMIT_DIRECTORY": !Ref ModelData}
+      ExecutionRoleArn: !Ref RoleArn
+
+  SageMakerEndpointConfig:
+    Type: "AWS::SageMaker::EndpointConfig"
+    Properties:
+      ProductionVariants: 
+        -
+          ModelName: !GetAtt SageMakerModel.ModelName
+          VariantName: sklearn-variant
+          InitialInstanceCount: !Ref InstanceCount
+          InstanceType: !Ref InstanceType
+          InitialVariantWeight: 1.0
+
+  SageMakerEndpoint:
+    Type: "AWS::SageMaker::Endpoint"
+    Properties: 
+      EndpointConfigName: !GetAtt SageMakerEndpointConfig.EndpointConfigName
