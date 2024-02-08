@@ -7,3 +7,5 @@ terraform init
 
 terraform apply
 ```
+
+## [Blog](https://towardsdatascience.com/deploying-sagemaker-endpoints-with-terraform-3b09fb3e1d59)
